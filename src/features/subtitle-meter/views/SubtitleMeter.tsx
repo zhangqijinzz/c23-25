@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { validateForExport } from "../analyzers/exportValidator";
+import type { Format, SubtitleCue } from "../models";
 import { ImportModule } from "../components/ImportModule";
 import { InspectionModule } from "../components/InspectionModule";
 import { PreviewModule } from "../components/PreviewModule";
@@ -13,6 +15,48 @@ const tabs = [
   { id: "delivery", number: "04", label: "版本导出", hint: "保存快照与导出" },
 ] as const;
 type TabId = (typeof tabs)[number]["id"];
+
+function DeliverySummary({
+  format,
+  cues,
+  onInspect,
+}: {
+  format: Format;
+  cues: SubtitleCue[];
+  onInspect: () => void;
+}) {
+  const check = useMemo(() => validateForExport(cues, format), [cues, format]);
+  const blocked = check.structural.length > 0,
+    warned = check.textual.length > 0;
+  return (
+    <section className="module delivery-summary">
+      <span className="module-kicker">
+        EXPORT CHECK · {format.toUpperCase()}
+      </span>
+      <strong
+        className={blocked ? "error-color" : warned ? "warning-color" : ""}
+      >
+        {blocked
+          ? `${check.structural.length} 项结构性问题，${format.toUpperCase()} 导出已拦截`
+          : warned
+            ? `${check.textual.length} 项文本问题，可修正后导出或直接继续`
+            : "校对完成，可以导出"}
+      </strong>
+      <small>
+        {blocked
+          ? `包含零时长、时间重叠或顺序问题，${format.toUpperCase()} 播放器会忽略或显示异常`
+          : warned
+            ? "文本问题不影响文件结构，仍可强制导出"
+            : `条目时间、顺序与精度均符合 ${format.toUpperCase()} 要求`}
+      </small>
+      {(blocked || warned) && (
+        <button onClick={onInspect}>
+          查看检查结果 <span>→</span>
+        </button>
+      )}
+    </section>
+  );
+}
 
 export function SubtitleMeter() {
   const vm = useMemo(createViewModel, []),
@@ -196,18 +240,13 @@ export function SubtitleMeter() {
                 project={project}
                 vm={vm}
                 phase={state.phase}
+                onLocateIssue={() => setActiveTab("inspection")}
               />
-              <section className="module delivery-summary">
-                <span className="module-kicker">EXPORT CHECK</span>
-                <strong>
-                  {state.issues.length === 0
-                    ? "校对完成，可以导出"
-                    : `还有 ${state.issues.length} 项问题待查看`}
-                </strong>
-                <button onClick={() => setActiveTab("inspection")}>
-                  查看检查结果 <span>→</span>
-                </button>
-              </section>
+              <DeliverySummary
+                format={project.format}
+                cues={project.cues}
+                onInspect={() => setActiveTab("inspection")}
+              />
             </div>
           ) : (
             emptyTab(

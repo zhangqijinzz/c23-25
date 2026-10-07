@@ -17,6 +17,7 @@ vi.mock("../services/exportService", () => ({ downloadSubtitles: vi.fn() }));
 describe("SubtitleMeterViewModel", () => {
   let vm: SubtitleMeterViewModel;
   beforeEach(() => {
+    vi.clearAllMocks();
     vm = new SubtitleMeterViewModel();
   });
   it("imports, edits, rechecks, snapshots, and exports", async () => {
@@ -54,5 +55,45 @@ describe("SubtitleMeterViewModel", () => {
     expect(vm.state.phase).toBe("error");
     expect(vm.state.notice).toContain("导出失败");
     expect(vm.state.project!.cues[0].text).toBe("Immediate edit");
+  });
+
+  const importTwoCues = async (fileName = "clip.srt") => {
+    vi.mocked(readTextFile).mockResolvedValueOnce(
+      "1\n00:00:01,000 --> 00:00:03,000\nFirst\n\n2\n00:00:04,000 --> 00:00:06,000\nSecond",
+    );
+    await vm.importFile(new File(["x"], fileName));
+  };
+
+  it("blocks export on structural problems even when forced", async () => {
+    await importTwoCues();
+    const first = vm.state.project!.cues[0];
+    await vm.editCue(first.id, { endMs: 5000 });
+    expect(await vm.exportFile()).toBe(false);
+    expect(await vm.exportFile(true)).toBe(false);
+    expect(downloadSubtitles).not.toHaveBeenCalled();
+    expect(vm.state.notice).toContain("结构性问题");
+  });
+
+  it("pauses on textual-only problems but allows forcing the export", async () => {
+    await importTwoCues("clip.vtt");
+    const cue = vm.state.project!.cues[0];
+    await vm.editCue(cue.id, { text: "Tom & Jerry" });
+    expect(await vm.exportFile()).toBe(false);
+    expect(downloadSubtitles).not.toHaveBeenCalled();
+    expect(await vm.exportFile(true)).toBe(true);
+    expect(downloadSubtitles).toHaveBeenCalledTimes(1);
+    expect(vm.state.notice).toBe("字幕文件已导出");
+  });
+
+  it("re-evaluates the gate after the target format changes", async () => {
+    await importTwoCues("clip.srt");
+    const cue = vm.state.project!.cues[0];
+    await vm.editCue(cue.id, { text: "<v Jim>Hello</v>" });
+    // SRT 下 VTT 专有标签是文本问题，可强制导出
+    expect(await vm.exportFile(true)).toBe(true);
+    // 切到 VTT 后同样内容合法，普通导出直接通过
+    vm.setFormat("vtt");
+    expect(await vm.exportFile()).toBe(true);
+    expect(downloadSubtitles).toHaveBeenCalledTimes(2);
   });
 });

@@ -1,4 +1,5 @@
 import { detectIssues } from "../analyzers/issueDetector";
+import { validateForExport } from "../analyzers/exportValidator";
 import { formatSubtitles } from "../formatters/subtitleFormatter";
 import {
   emptyState,
@@ -121,19 +122,36 @@ export class SubtitleMeterViewModel {
     await this.commit({ ...project, cues: structuredClone(version.cues) });
     this.publish({ notice: `已恢复${version.label}` });
   }
-  async exportFile() {
+  async exportFile(force = false): Promise<boolean> {
     const project = this.state.project;
-    if (!project) return;
+    if (!project) return false;
+    const check = validateForExport(project.cues, project.format);
+    if (check.structural.length) {
+      this.publish({
+        phase: "ready",
+        notice: `导出已拦截：${check.structural.length} 项 ${project.format.toUpperCase()} 结构性问题需先修正`,
+      });
+      return false;
+    }
+    if (check.textual.length && !force) {
+      this.publish({
+        phase: "ready",
+        notice: `导出前有 ${check.textual.length} 项文本问题，可修正后导出或选择仍然导出`,
+      });
+      return false;
+    }
     this.publish({ phase: "exporting" });
     try {
       formatSubtitles(project.cues, project.format);
       downloadSubtitles(project.name, project.cues, project.format);
       this.publish({ phase: "ready", notice: "字幕文件已导出" });
+      return true;
     } catch {
       this.publish({
         phase: "error",
         notice: "导出失败，编辑内容已保留，请重试",
       });
+      return false;
     }
   }
   setFormat(format: Format) {

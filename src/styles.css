@@ -623,6 +623,117 @@ h1 em {
   font-size: 8px;
   margin: 9px 0 0;
 }
+.export-check {
+  margin-top: 12px;
+  border-radius: 5px;
+  border: 1px solid #e6e8df;
+  background: #fbfcf8;
+  overflow: hidden;
+}
+.export-check.ok {
+  border-color: #cfe0b2;
+  background: #f3f8ea;
+}
+.export-check.blocked {
+  border-color: #e6c3bd;
+  background: #fcf2f0;
+}
+.export-check.warn {
+  border-color: #e6d5ae;
+  background: #fdf8ee;
+}
+.export-check-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.export-check-icon {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  font:
+    bold 10px "DM Mono",
+    monospace;
+  background: #e2ecd0;
+  color: #6d8f42;
+}
+.export-check.blocked .export-check-icon {
+  background: #f0d2cc;
+  color: #bf6256;
+}
+.export-check.warn .export-check-icon {
+  background: #f0e1c2;
+  color: #b08a3e;
+}
+.export-check-title {
+  flex: 1;
+  color: #5d6652;
+  font-size: 10px;
+}
+.export-check-toggle {
+  color: #9a9d92;
+  font-size: 9px;
+}
+.export-check-body {
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 9px 10px 10px;
+  display: grid;
+  gap: 10px;
+}
+.export-check-group strong {
+  display: block;
+  font-size: 9px;
+  margin-bottom: 2px;
+}
+.check-row {
+  display: flex;
+  align-items: baseline;
+  width: 100%;
+  gap: 8px;
+  padding: 6px 0;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  background: none;
+  color: #72776e;
+  font-size: 10px;
+  cursor: pointer;
+}
+.check-row .issue-bullet {
+  width: 10px;
+  font-size: 12px;
+}
+.check-row.error .issue-bullet {
+  color: #c66a5c;
+}
+.check-row.warning .issue-bullet {
+  color: #c09a51;
+}
+.export-check-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.export-check-actions .export-button {
+  padding: 8px 10px;
+}
+.export-check-hint {
+  color: #a66a60;
+  font-size: 9px;
+}
+.delivery-summary small {
+  margin-top: 6px;
+  color: #96998e;
+  font-size: 10px;
+}
 .checklist p {
   color: #85897e;
   font-size: 10px;
