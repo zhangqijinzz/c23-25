@@ -4,6 +4,7 @@ import { InspectionModule } from "../components/InspectionModule";
 import { PreviewModule } from "../components/PreviewModule";
 import { TimelineModule } from "../components/TimelineModule";
 import { VersionExportModule } from "../components/VersionExportModule";
+import { validateExport } from "../analyzers/exportValidator";
 import { createViewModel } from "../viewmodels/subtitleMeterViewModel";
 
 const tabs = [
@@ -25,6 +26,14 @@ export function SubtitleMeter() {
   const selected =
     project?.cues.find((cue) => cue.id === state.selectedId) ??
     project?.cues[0];
+  const exportValidation = project
+    ? validateExport(project.cues, project.format)
+    : null;
+
+  const inspectExportIssue = (cueId: string) => {
+    vm.selectCue(cueId);
+    setActiveTab("inspection");
+  };
 
   const loadDemo = () => {
     const content =
@@ -194,15 +203,20 @@ export function SubtitleMeter() {
             <div className="module-page delivery-page">
               <VersionExportModule
                 project={project}
+                cues={project.cues}
                 vm={vm}
                 phase={state.phase}
+                reviewOpen={state.exportReviewOpen}
+                onInspectIssue={inspectExportIssue}
               />
               <section className="module delivery-summary">
                 <span className="module-kicker">EXPORT CHECK</span>
                 <strong>
-                  {state.issues.length === 0
-                    ? "校对完成，可以导出"
-                    : `还有 ${state.issues.length} 项问题待查看`}
+                  {!exportValidation || exportValidation.issues.length === 0
+                    ? `${project.format.toUpperCase()} 结构检查通过，可以导出`
+                    : exportValidation.structural.length
+                      ? `${exportValidation.structural.length} 项 ${project.format.toUpperCase()} 结构问题会阻断导出`
+                      : `${exportValidation.text.length} 项文本提醒，可确认后导出`}
                 </strong>
                 <button onClick={() => setActiveTab("inspection")}>
                   查看检查结果 <span>→</span>

@@ -1,4 +1,5 @@
 import { detectIssues } from "../analyzers/issueDetector";
+import { validateExport } from "../analyzers/exportValidator";
 import { formatSubtitles } from "../formatters/subtitleFormatter";
 import {
   emptyState,
@@ -73,6 +74,7 @@ export class SubtitleMeterViewModel {
       this.publish({
         selectedId: cues[0].id,
         notice: `已解析 ${cues.length} 条字幕`,
+        exportReviewOpen: false,
       });
       await this.commit(project, "ready");
     } catch (error) {
@@ -121,20 +123,36 @@ export class SubtitleMeterViewModel {
     await this.commit({ ...project, cues: structuredClone(version.cues) });
     this.publish({ notice: `已恢复${version.label}` });
   }
-  async exportFile() {
+  async exportFile(ignoreTextIssues = false) {
     const project = this.state.project;
     if (!project) return;
+    const validation = validateExport(project.cues, project.format);
+    if (validation.structural.length) {
+      this.publish({ phase: "ready", exportReviewOpen: true });
+      return;
+    }
+    if (!ignoreTextIssues && validation.text.length) {
+      this.publish({ phase: "ready", exportReviewOpen: true });
+      return;
+    }
     this.publish({ phase: "exporting" });
     try {
       formatSubtitles(project.cues, project.format);
       downloadSubtitles(project.name, project.cues, project.format);
-      this.publish({ phase: "ready", notice: "字幕文件已导出" });
+      this.publish({
+        phase: "ready",
+        notice: "字幕文件已导出",
+        exportReviewOpen: false,
+      });
     } catch {
       this.publish({
         phase: "error",
         notice: "导出失败，编辑内容已保留，请重试",
       });
     }
+  }
+  closeExportReview() {
+    this.publish({ exportReviewOpen: false });
   }
   setFormat(format: Format) {
     const project = this.state.project;

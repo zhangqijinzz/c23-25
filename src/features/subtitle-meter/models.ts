@@ -40,6 +40,7 @@ export interface MeterState {
   selectedId: string | null;
   notice: string;
   zoom: number;
+  exportReviewOpen: boolean;
 }
 export const emptyState = (): MeterState => ({
   phase: "empty",
@@ -48,4 +49,5 @@ export const emptyState = (): MeterState => ({
   selectedId: null,
   notice: "",
   zoom: 1,
+  exportReviewOpen: false,
 });
